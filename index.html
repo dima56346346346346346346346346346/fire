@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#151515">
+<title>Мастерская — учёт ремонтов</title>
+<style>
+:root{color-scheme:dark;--bg:#111;--panel:#1d1d1d;--line:#343434;--muted:#aaa;--accent:#78a9ff;--green:#78d6a0;--red:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f5f5;font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:980px;margin:auto;padding:22px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:26px;margin:0}h2{font-size:19px;margin:0 0 14px}.muted{color:var(--muted);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:#262626;padding:14px;border-radius:12px}.stat small{display:block;color:var(--muted)}.stat strong{display:block;font-size:22px;margin-top:5px}
+input,select,textarea,button{font:inherit;border-radius:10px;padding:11px 12px;border:1px solid #444;background:#151515;color:#fff;width:100%}
+textarea{min-height:76px;resize:vertical}label{display:block;color:#ccc;font-size:13px;margin:10px 0 5px}
+button{background:var(--accent);color:#101820;border:0;font-weight:650;cursor:pointer}button.secondary{background:#333;color:#fff;border:1px solid #4a4a4a}button.danger{background:#5a2929;color:#fff}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{width:auto}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+#auth{max-width:440px;margin:12vh auto}.hidden{display:none!important}.project{border-top:1px solid var(--line);padding:14px 0}.project:first-child{border:0}
+.projecthead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.projecthead strong{font-size:17px}.pill{font-size:12px;color:#d7e5ff;background:#26364d;padding:4px 8px;border-radius:20px;white-space:nowrap}
+.money{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0;color:#ccc;font-size:13px}.profit{color:var(--green);font-weight:700}.loss{color:var(--red);font-weight:700}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.top h1{font-size:23px}}
+</style>
+</head>
+<body>
+<main>
+  <section id="auth" class="panel">
+    <h1>🔧 Мастерская</h1>
+    <p class="muted">Войди или создай аккаунт. Один и тот же аккаунт используй на iPhone и Windows.</p>
+    <label>Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+    <label>Пароль</label><input id="password" type="password" autocomplete="current-password" placeholder="Минимум 6 символов">
+    <div class="actions" style="margin-top:14px">
+      <button id="login">Войти</button><button id="register" class="secondary">Создать аккаунт</button>
+    </div>
+    <p id="authMsg" class="muted" aria-live="polite"></p>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="top"><h1>🔧 Мастерская</h1><div class="actions"><button id="backup" class="secondary">Экспорт копии</button><button id="logout" class="secondary">Выйти</button></div></div>
+    <p class="muted">Облачный журнал ремонтов и перепродажи · синхронизация между устройствами</p>
+    <div class="stats">
+      <div class="stat"><small>Прибыль по проданным</small><strong id="totalProfit">0 ₽</strong></div>
+      <div class="stat"><small>Вложено в проекты</small><strong id="totalSpent">0 ₽</strong></div>
+      <div class="stat"><small>Проектов</small><strong id="totalCount">0</strong></div>
+    </div>
+
+    <section class="panel">
+      <h2 id="formTitle">Добавить технику</h2>
+      <form id="projectForm">
+        <input id="editId" type="hidden">
+        <div class="grid">
+          <div><label>Модель / название *</label><input id="name" required placeholder="Например, ASUS ZenBook 3"></div>
+          <div><label>Тип техники</label><select id="category"><option>Ноутбук</option><option>Смартфон</option><option>Планшет</option><option>Другое</option></select></div>
+          <div><label>Статус</label><select id="status"><option>Куплен</option><option>Диагностика</option><option>В ремонте</option><option>Готов</option><option>На продаже</option><option>Продан</option></select></div>
+          <div><label>Дата покупки</label><input id="date" type="date"></div>
+          <div><label>Цена покупки, ₽</label><input id="purchase" type="number" min="0" step="0.01" value="0"></div>
+          <div><label>Доставка и комиссия, ₽</label><input id="delivery" type="number" min="0" step="0.01" value="0"></div>
+          <div><label>Запчасти и расходники, ₽</label><input id="parts" type="number" min="0" step="0.01" value="0"></div>
+          <div><label>Прочие расходы, ₽</label><input id="other" type="number" min="0" step="0.01" value="0"></div>
+          <div><label>Цена продажи, ₽</label><input id="sale" type="number" min="0" step="0.01" value="0"></div>
+        </div>
+        <label>Неисправность / что сделано / заметки</label><textarea id="notes" placeholder="Симптомы, диагностика, заменённые детали..."></textarea>
+        <div class="actions" style="margin-top:12px"><button type="submit">Сохранить проект</button><button type="button" id="cancelEdit" class="secondary hidden">Отмена</button></div>
+        <p id="formMsg" class="muted" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="top"><h2>Мои проекты</h2><select id="filter" style="max-width:180px"><option value="">Все статусы</option><option>Куплен</option><option>Диагностика</option><option>В ремонте</option><option>Готов</option><option>На продаже</option><option>Продан</option></select></div>
+      <div id="projects"><p class="muted">Загрузка...</p></div>
+    </section>
+    <p class="muted">Данные хранятся в Firestore. Не добавляй пароли, данные банковских карт или другие секреты. Экспортируй резервную копию время от времени.</p>
+  </section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDeEEoTC_1g37YKn9Nhoiz8B0K5QkjxSaI",
+  authDomain: "masterskaya-accounting.firebaseapp.com",
+  projectId: "masterskaya-accounting",
+  storageBucket: "masterskaya-accounting.firebasestorage.app",
+  messagingSenderId: "923162404490",
+  appId: "1:923162404490:web:92e38ae42a5bd74b562f73"
+};
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+const $ = id => document.getElementById(id);
+let projects = [], stopListen = null, currentUser = null;
+const money = n => (Number(n)||0).toLocaleString("ru-RU",{maximumFractionDigits:2})+" ₽";
+const num = id => Number($(id).value)||0;
+const cost = p => (+p.purchase||0)+(+p.delivery||0)+(+p.parts||0)+(+p.other||0);
+const profit = p => (+p.sale||0)-cost(p);
+
+$("register").onclick = async () => {
+  $("authMsg").textContent = "";
+  try { await createUserWithEmailAndPassword(auth,$("email").value.trim(),$("password").value); }
+  catch(e){ $("authMsg").textContent = friendly(e); }
+};
+$("login").onclick = async () => {
+  $("authMsg").textContent = "";
+  try { await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value); }
+  catch(e){ $("authMsg").textContent = friendly(e); }
+};
+$("logout").onclick = () => signOut(auth);
+function friendly(e){
+  const map={"auth/invalid-email":"Проверь email.","auth/weak-password":"Пароль должен быть не короче 6 символов.","auth/email-already-in-use":"Этот email уже зарегистрирован — попробуй войти.","auth/invalid-credential":"Неверный email или пароль.","auth/too-many-requests":"Слишком много попыток. Попробуй позже."};
+  return map[e.code] || ("Ошибка: "+e.message);
+}
+onAuthStateChanged(auth,user=>{
+  currentUser=user;
+  $("auth").classList.toggle("hidden",!!user); $("app").classList.toggle("hidden",!user);
+  if(stopListen){stopListen();stopListen=null;}
+  if(user){
+    stopListen=onSnapshot(collection(db,"users",user.uid,"projects"),snap=>{
+      projects=snap.docs.map(d=>({id:d.id,...d.data()}));
+      render();
+    },err=>{$("projects").textContent="Ошибка доступа к базе: "+err.message;});
+  }
+});
+$("projectForm").onsubmit = async e => {
+  e.preventDefault(); if(!currentUser)return;
+  const data={name:$("name").value.trim(),category:$("category").value,status:$("status").value,date:$("date").value,
+    purchase:num("purchase"),delivery:num("delivery"),parts:num("parts"),other:num("other"),sale:num("sale"),
+    notes:$("notes").value.trim(),updatedAt:serverTimestamp()};
+  if(!data.name)return;
+  try{
+    const id=$("editId").value;
+    if(id) await updateDoc(doc(db,"users",currentUser.uid,"projects",id),data);
+    else await addDoc(collection(db,"users",currentUser.uid,"projects"),{...data,createdAt:serverTimestamp()});
+    resetForm(); $("formMsg").textContent="Сохранено.";
+  }catch(err){$("formMsg").textContent="Не удалось сохранить: "+err.message;}
+};
+function resetForm(){ $("projectForm").reset(); $("editId").value=""; $("purchase").value=$("delivery").value=$("parts").value=$("other").value=$("sale").value="0"; $("formTitle").textContent="Добавить технику"; $("cancelEdit").classList.add("hidden"); }
+$("cancelEdit").onclick=resetForm;
+$("filter").onchange=render;
+function render(){
+  const filtered=projects.filter(p=>!$("filter").value||p.status===$("filter").value);
+  $("totalProfit").textContent=money(projects.filter(p=>p.status==="Продан").reduce((s,p)=>s+profit(p),0));
+  $("totalSpent").textContent=money(projects.reduce((s,p)=>s+cost(p),0));
+  $("totalCount").textContent=projects.length;
+  $("projects").innerHTML="";
+  if(!filtered.length){$("projects").innerHTML='<p class="muted">Пока записей нет. Добавь первый проект выше.</p>';return;}
+  filtered.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0)).forEach(p=>{
+    const el=document.createElement("div");el.className="project";
+    const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    el.innerHTML=`<div class="projecthead"><div><strong>${safe(p.name)}</strong><div class="muted">${safe(p.category)} · ${safe(p.date||"Дата не указана")}</div></div><span class="pill">${safe(p.status)}</span></div>
+    <div class="money"><span>Расходы: <b>${money(cost(p))}</b></span><span>Продажа: <b>${money(p.sale)}</b></span><span class="${profit(p)>=0?'profit':'loss'}">Разница: ${money(profit(p))}</span></div>
+    ${p.notes?`<div class="muted" style="white-space:pre-wrap">${safe(p.notes)}</div>`:""}
+    <div class="actions" style="margin-top:10px"><button class="secondary edit">Изменить</button><button class="danger delete">Удалить</button></div>`;
+    el.querySelector(".edit").onclick=()=>{
+      $("editId").value=p.id;$("name").value=p.name||"";$("category").value=p.category||"Ноутбук";$("status").value=p.status||"Куплен";$("date").value=p.date||"";
+      ["purchase","delivery","parts","other","sale"].forEach(k=>$(k).value=p[k]??0);$("notes").value=p.notes||"";
+      $("formTitle").textContent="Изменить проект";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});
+    };
+    el.querySelector(".delete").onclick=async()=>{if(confirm("Удалить проект «"+p.name+"»?"))try{await deleteDoc(doc(db,"users",currentUser.uid,"projects",p.id));}catch(e){alert(e.message);}};
+    $("projects").appendChild(el);
+  });
+}
+$("backup").onclick=()=>{
+  const blob=new Blob([JSON.stringify(projects.map(({id,...p})=>p),null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="masterskaya-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(url);
+};
+</script>
+</body>
+</html>
